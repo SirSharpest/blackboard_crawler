@@ -1,0 +1,54 @@
+################################################
+# This is a simple application that will hopefully
+# grab pdf's from blackboard and store them on your machine
+################################################
+
+
+################################################
+# Imports
+################################################
+import urllib.request
+import http.cookiejar
+import blackboard_loader
+
+
+################################################
+# global vars (plz don't shout at me
+################################################
+user_id_box = 'user_id'
+user_passwd_box = 'password'
+
+user = input('enter your username (aber)')
+passwd = input('enter your password ')
+
+login_bttn = 'login'
+
+################################################
+# Main
+################################################
+
+
+#Just doing some setup stuff
+cj = http.cookiejar.CookieJar()
+opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+urllib.request.install_opener(opener)
+
+#Call to login to blackboard
+blackboard_loader.login_bb(user, passwd)
+
+#For testing I will be searching this url and attempting to get all from it
+ai_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1'
+
+links = blackboard_loader.get_links(ai_content_page)
+
+for file in links:
+    #Call to download the file
+    blackboard_loader.download_pdf(file)
+
+
+#The file that we want to get
+#file_to_get = 'https://blackboard.aber.ac.uk/bbcswebdav/pid-558435-dt-content-rid-987416_1/xid-987416_1'
+
+
+
