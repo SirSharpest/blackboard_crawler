@@ -11,7 +11,7 @@ import os
 import urllib.request
 import http.cookiejar
 import blackboard_loader
-
+from os.path import expanduser
 
 ################################################
 # global vars (plz don't shout at me
@@ -21,7 +21,7 @@ user_passwd_box = 'password'
 
 user = input('enter your username (aber)')
 passwd = input('enter your password ')
-
+home = expanduser("~/Documents")
 login_bttn = 'login'
 
 ################################################
@@ -35,6 +35,9 @@ opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
 
+os.chdir(home)
+
+
 #Call to login to blackboard
 blackboard_loader.login_bb(user, passwd)
 
@@ -43,7 +46,7 @@ ai_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/list
 cunix_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_558437_1'
 data_structures_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1'
 software_dev_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12897_1&content_id=_668810_1'
-
+persis_data_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12910_1&content_id=_559019_1&mode=reset'
 ########################################################
 if not os.path.exists('AI Notes'):
     os.makedirs('AI Notes')
@@ -92,6 +95,20 @@ if not os.path.exists('Software Lifecycle'):
 os.chdir('Software Lifecycle')
 
 links = blackboard_loader.get_links(software_dev_page)
+
+for file in links:
+    #Call to download the file
+    blackboard_loader.download_pdf(file)
+
+    #########################################################
+os.chdir('..')
+
+if not os.path.exists('Modelling Persistent Data'):
+    os.makedirs('Modelling Persistent Data')
+
+os.chdir('Modelling Persistent Data')
+
+links = blackboard_loader.get_recursive_links(persis_data_page)
 
 for file in links:
     #Call to download the file

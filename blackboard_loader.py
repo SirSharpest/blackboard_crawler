@@ -67,3 +67,29 @@ def get_links(url):
                 documents.append(temp_doc)
 
     return documents
+
+def get_recursive_links(url):
+    site = urllib.request.urlopen(url)
+    html = site.read()
+
+    # parse the html
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+
+    data = soup.find_all(id='content')
+
+    #container for the docs
+    documents = []
+
+
+    for div in data:
+        links = div.find_all('a')
+        for a in links:
+            documents.append('https://blackboard.aber.ac.uk' + a['href'])
+
+    files_found = []
+
+    for link in documents:
+        for files in get_links(link):
+            files_found.append(files)
+
+    return files_found
