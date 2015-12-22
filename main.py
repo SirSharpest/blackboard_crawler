@@ -40,7 +40,11 @@ blackboard_loader.login_bb(user, passwd)
 
 #For testing I will be searching this url and attempting to get all from it
 ai_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1'
+cunix_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_558437_1'
+data_structures_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1'
+software_dev_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12897_1&content_id=_668810_1'
 
+########################################################
 if not os.path.exists('AI Notes'):
     os.makedirs('AI Notes')
 
@@ -51,9 +55,44 @@ for file in links:
     #Call to download the file
     blackboard_loader.download_pdf(file)
 
+#########################################################
+os.chdir('..')
 
-#The file that we want to get
-#file_to_get = 'https://blackboard.aber.ac.uk/bbcswebdav/pid-558435-dt-content-rid-987416_1/xid-987416_1'
+if not os.path.exists('C & Unix Notes'):
+    os.makedirs('C & Unix Notes')
 
+os.chdir('C & Unix Notes')
 
+links = blackboard_loader.get_links(cunix_content_page)
 
+for file in links:
+    #Call to download the file
+    blackboard_loader.download_pdf(file)
+
+#########################################################
+os.chdir('..')
+
+if not os.path.exists('Data Structures Notes'):
+    os.makedirs('Data Structures Notes')
+
+os.chdir('Data Structures Notes')
+
+links = blackboard_loader.get_links(data_structures_content_page)
+
+for file in links:
+    #Call to download the file
+    blackboard_loader.download_pdf(file)
+
+#########################################################
+os.chdir('..')
+
+if not os.path.exists('Software Lifecycle'):
+    os.makedirs('Software Lifecycle')
+
+os.chdir('Software Lifecycle')
+
+links = blackboard_loader.get_links(software_dev_page)
+
+for file in links:
+    #Call to download the file
+    blackboard_loader.download_pdf(file)
