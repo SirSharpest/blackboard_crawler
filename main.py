@@ -7,6 +7,7 @@
 ################################################
 # Imports
 ################################################
+import os
 import urllib.request
 import http.cookiejar
 import blackboard_loader
@@ -40,7 +41,11 @@ blackboard_loader.login_bb(user, passwd)
 #For testing I will be searching this url and attempting to get all from it
 ai_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1'
 
+if not os.path.exists('AI Notes'):
+    os.makedirs('AI Notes')
+
 links = blackboard_loader.get_links(ai_content_page)
+os.chdir('AI Notes')
 
 for file in links:
     #Call to download the file
