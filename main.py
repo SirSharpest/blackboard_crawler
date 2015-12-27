@@ -12,6 +12,7 @@ import urllib.request
 import http.cookiejar
 import blackboard_loader
 from os.path import expanduser
+import time
 
 ################################################
 # global vars (plz don't shout at me
@@ -34,7 +35,7 @@ cj = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
-
+start_time = time.time()
 os.chdir(home)
 
 
@@ -113,8 +114,14 @@ if not os.path.exists('Modelling Persistent Data'):
 
 os.chdir('Modelling Persistent Data')
 
+print('Attempting to find all links in Persistent Data')
 links = blackboard_loader.get_recursive_links(persis_data_page)
+
 
 for file in links:
     #Call to download the file
     blackboard_loader.download_pdf(file)
+
+end_time = time.time()
+total_time = end_time - start_time
+print('Finished in: ' + str(total_time) + ' seconds')
