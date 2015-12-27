@@ -13,9 +13,10 @@ import http.cookiejar
 import blackboard_loader
 from os.path import expanduser
 import time
+from blackboard_link import blackboard_link
 
 ################################################
-# global vars (plz don't shout at me
+# global vars (plz don't shout at me)
 ################################################
 user_id_box = 'user_id'
 user_passwd_box = 'password'
@@ -39,88 +40,70 @@ start_time = time.time()
 os.chdir(home)
 
 
+################################################
+# Functions
+###############################################
+
+#Grab and download one module's files
+def get_module(blackboard_link):
+        if not os.path.exists(blackboard_link.get_name()):
+            print('Making directory for: ' + blackboard_link.get_name())
+            os.makedirs(blackboard_link.get_name())
+
+        if blackboard_link.get_recurse() == True:
+            links = blackboard_loader.get_recursive_links(blackboard_link.get_url())
+        else:
+            links = blackboard_loader.get_links(blackboard_link.get_url())
+
+        os.chdir(blackboard_link.get_name())
+
+        for file in links:
+            # Call to download the file
+            blackboard_loader.download_pdf(file)
+
+        os.chdir('..')
+
+
+
 #Call to login to blackboard
 blackboard_loader.login_bb(user, passwd)
 
+
+pages = []
+
+
+
 #For testing I will be searching this url and attempting to get all from it
-ai_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1'
-cunix_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_558437_1'
-data_structures_content_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1'
-software_dev_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12897_1&content_id=_668810_1'
-persis_data_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12910_1&content_id=_559019_1&mode=reset'
-########################################################
-if not os.path.exists('AI Notes'):
-    os.makedirs('AI Notes')
-    print('Making directory for AI')
+ai_content_page = blackboard_link()
+ai_content_page.set_name('AI')
+ai_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1')
 
-links = blackboard_loader.get_links(ai_content_page)
-os.chdir('AI Notes')
+cunix_content_page = blackboard_link()
+cunix_content_page.set_name('C & Unix')
+cunix_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_558437_1')
 
-for file in links:
-    #Call to download the file
-    blackboard_loader.download_pdf(file)
+data_structures_content_page = blackboard_link()
+data_structures_content_page.set_name('AI')
+data_structures_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1')
 
-#########################################################
-os.chdir('..')
+software_dev_page = blackboard_link()
+software_dev_page.set_name('Software Development')
+software_dev_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12897_1&content_id=_668810_1')
 
-if not os.path.exists('C & Unix Notes'):
-    os.makedirs('C & Unix Notes')
-    print('Making directory for C & Unix')
+persis_data_content_page = blackboard_link()
+persis_data_content_page.set_name('Persistent Data')
+persis_data_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12910_1&content_id=_559019_1&mode=reset')
+persis_data_content_page.set_recurse(True)
 
-os.chdir('C & Unix Notes')
+# Add these pages to a list to iterate over
+pages.append(ai_content_page)
+pages.append(cunix_content_page)
+pages.append(data_structures_content_page)
+pages.append(software_dev_page)
+pages.append(persis_data_content_page)
 
-links = blackboard_loader.get_links(cunix_content_page)
-
-for file in links:
-    #Call to download the file
-    blackboard_loader.download_pdf(file)
-
-#########################################################
-os.chdir('..')
-
-if not os.path.exists('Data Structures Notes'):
-    os.makedirs('Data Structures Notes')
-    print('Making directory for Data Structures')
-
-os.chdir('Data Structures Notes')
-
-links = blackboard_loader.get_links(data_structures_content_page)
-
-for file in links:
-    #Call to download the file
-    blackboard_loader.download_pdf(file)
-
-#########################################################
-os.chdir('..')
-
-if not os.path.exists('Software Lifecycle'):
-    os.makedirs('Software Lifecycle')
-    print('Making directory for Software Lifecycle')
-
-os.chdir('Software Lifecycle')
-
-links = blackboard_loader.get_links(software_dev_page)
-
-for file in links:
-    #Call to download the file
-    blackboard_loader.download_pdf(file)
-
-    #########################################################
-os.chdir('..')
-
-if not os.path.exists('Modelling Persistent Data'):
-    os.makedirs('Modelling Persistent Data')
-    print('Making directory for Modelling Persistent Data')
-
-os.chdir('Modelling Persistent Data')
-
-print('Attempting to find all links in Persistent Data')
-links = blackboard_loader.get_recursive_links(persis_data_page)
-
-
-for file in links:
-    #Call to download the file
-    blackboard_loader.download_pdf(file)
+for links in pages:
+    get_module(links)
 
 end_time = time.time()
 total_time = end_time - start_time

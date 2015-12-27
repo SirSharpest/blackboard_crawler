@@ -70,6 +70,7 @@ def get_links(url):
 
     return documents
 
+
 def get_recursive_links(url):
     site = urllib.request.urlopen(url)
     html = site.read()
@@ -82,7 +83,6 @@ def get_recursive_links(url):
     #container for the docs
     documents = []
 
-
     for div in data:
         links = div.find_all('a')
         for a in links:
@@ -94,4 +94,36 @@ def get_recursive_links(url):
         for files in get_links(link):
             files_found.append(files)
 
+    for link in get_links(url):
+        files_found.append(link)
+
     return files_found
+
+
+def get_folder_links(url):
+    site = urllib.request.urlopen(url)
+    html = site.read()
+
+    # parse the html
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+
+    data = soup.find_all(id='content')
+
+    #container for the docs
+    documents = []
+
+    for div in data:
+        links = div.find_all('a')
+        for a in links:
+            documents.append('https://blackboard.aber.ac.uk' + a['href'])
+
+
+  # At this point we have all links on a page
+
+    folders = []
+    for link in documents:
+        if 'listContent' in link: #if its a folder
+            folders.append(links)
+
+    return folders
+
