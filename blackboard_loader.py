@@ -17,18 +17,22 @@ def login_bb(user_id, user_passwd):
         'user_id': user_id,
         'password': user_passwd
     }
+    print('Entering Blackboard...')
     data = urllib.parse.urlencode(payload)
     binary_data = data.encode('UTF-8')
     req = urllib.request.Request(authentication_url, binary_data)
     resp = urllib.request.urlopen(req)
     contents = resp.read()
+    print('Connected!')
 
 
 def download_pdf(file_to_get):
 
+    print('Accessing: ' + file_to_get.get_name())
     source = urllib.request.urlopen(file_to_get.get_url())
     extension = guess_extension(source.info()['Content-Type'])
     app_name = "default.pdf"
+
 
     if extension:
         app_name = file_to_get.get_name()
@@ -39,7 +43,7 @@ def download_pdf(file_to_get):
         file = open('test.pdf', 'wb')
         file.write(source.read())
         file.close()
-
+    print('File saved: ' + file_to_get.get_name())
     #print("I think it worked")
 
 
@@ -47,7 +51,6 @@ def download_pdf(file_to_get):
 def get_links(url):
     site = urllib.request.urlopen(url)
     html = site.read()
-
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
@@ -55,7 +58,6 @@ def get_links(url):
 
     #container for the docs
     documents = []
-
 
     for div in data:
         links = div.find_all('a')

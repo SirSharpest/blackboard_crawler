@@ -50,6 +50,7 @@ persis_data_page = 'https://blackboard.aber.ac.uk/webapps/blackboard/content/lis
 ########################################################
 if not os.path.exists('AI Notes'):
     os.makedirs('AI Notes')
+    print('Making directory for AI')
 
 links = blackboard_loader.get_links(ai_content_page)
 os.chdir('AI Notes')
@@ -63,6 +64,7 @@ os.chdir('..')
 
 if not os.path.exists('C & Unix Notes'):
     os.makedirs('C & Unix Notes')
+    print('Making directory for C & Unix')
 
 os.chdir('C & Unix Notes')
 
@@ -77,6 +79,7 @@ os.chdir('..')
 
 if not os.path.exists('Data Structures Notes'):
     os.makedirs('Data Structures Notes')
+    print('Making directory for Data Structures')
 
 os.chdir('Data Structures Notes')
 
@@ -91,6 +94,7 @@ os.chdir('..')
 
 if not os.path.exists('Software Lifecycle'):
     os.makedirs('Software Lifecycle')
+    print('Making directory for Software Lifecycle')
 
 os.chdir('Software Lifecycle')
 
@@ -105,6 +109,7 @@ os.chdir('..')
 
 if not os.path.exists('Modelling Persistent Data'):
     os.makedirs('Modelling Persistent Data')
+    print('Making directory for Modelling Persistent Data')
 
 os.chdir('Modelling Persistent Data')
 
