@@ -78,7 +78,7 @@ def get_recursive_links(url):
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    data = soup.find_all(id='content')
+    #ata = soup.find_all(id='content')
 
     #container for the docs
     documents = []
@@ -100,14 +100,16 @@ def get_recursive_links(url):
     return files_found
 
 
-def get_folder_links(url):
+def get_folder_links(url, div):
     site = urllib.request.urlopen(url)
     html = site.read()
 
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    data = soup.find_all(id='content')
+    #data = soup.find_all(id='content')
+    #data = soup.find_all(id='module:_371_1')
+    data = soup.find_all(id=div)
 
     #container for the docs
     documents = []
@@ -122,8 +124,29 @@ def get_folder_links(url):
 
     folders = []
     for link in documents:
-        if 'listContent' in link: #if its a folder
-            folders.append(links)
+        if 'listContent' in link or 'execute' in link: #if its a folder
+            folders.append(link)
 
     return folders
+
+
+def find_content_link(url):
+    site = urllib.request.urlopen(url)
+    html = site.read()
+
+    # parse the html
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+
+       #data = soup.find_all(id='content')
+    data = soup.find_all(id='menuWrap')
+
+    #container for the docs
+    documents = []
+
+    for div in data:
+        links = div.find_all('a')
+        for a in links:
+            if 'Content' in a.text or 'Course Documents' in a.text:
+             documents.append('https://blackboard.aber.ac.uk' + a['href'])
+             return documents
 

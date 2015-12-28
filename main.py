@@ -21,8 +21,8 @@ from blackboard_link import blackboard_link
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = input('enter your username (aber)')
-passwd = input('enter your password ')
+user = 'nah26'
+passwd = 'zxvf5821'
 home = expanduser("~/Documents")
 login_bttn = 'login'
 
@@ -63,6 +63,24 @@ def get_module(blackboard_link):
 
         os.chdir('..')
 
+def get_all(url):
+
+    files = blackboard_loader.get_links(url)
+    folders = blackboard_loader.get_folder_links(url, 'content')
+
+    for i in folders:
+        print(i)
+
+    if folders:
+        for folder in folders:
+            get_all(folder)
+
+    for item in files:
+        print(item.get_url() + ' found at: ' + url )
+        print('Downloading now')
+        blackboard_loader.download_pdf(item)
+
+
 
 
 #Call to login to blackboard
@@ -80,10 +98,10 @@ ai_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/conten
 
 cunix_content_page = blackboard_link()
 cunix_content_page.set_name('C & Unix')
-cunix_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_558437_1')
+cunix_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_542745_1&mode=reset')
 
 data_structures_content_page = blackboard_link()
-data_structures_content_page.set_name('AI')
+data_structures_content_page.set_name('Data Structures')
 data_structures_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1')
 
 software_dev_page = blackboard_link()
@@ -103,8 +121,30 @@ pages.append(software_dev_page)
 pages.append(persis_data_content_page)
 
 for links in pages:
-    get_module(links)
+    if not os.path.exists(links.get_name()):
+        print('Making directory for: ' + links.get_name())
+        os.makedirs(links.get_name())
+    os.chdir(links.get_name())
+    get_all(links.get_url())
+    os.chdir('..')
 
 end_time = time.time()
 total_time = end_time - start_time
 print('Finished in: ' + str(total_time) + ' seconds')
+
+
+
+# compsci_2nd_year = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
+# compsci_2nd_year_folders = blackboard_loader.get_folder_links(compsci_2nd_year, 'module:_371_1')
+#
+#
+# compsci_2nd_year_folders_content = []
+#
+# for module in compsci_2nd_year_folders:
+#     compsci_2nd_year_folders_content.append(blackboard_loader.find_content_link(module))
+#
+# for content in compsci_2nd_year_folders_content:
+#     tmp = blackboard_link()
+#     tmp.set_name('test')
+#     tmp.set_url(content)
+#     get_all(tmp)
