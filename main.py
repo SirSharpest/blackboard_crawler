@@ -21,8 +21,8 @@ from blackboard_link import blackboard_link
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = 'nah26'
-passwd = 'zxvf5821'
+user = input('Enter in Aber ID')
+passwd = input('Enter password')
 home = expanduser("~/Documents")
 login_bttn = 'login'
 
@@ -63,17 +63,22 @@ def get_module(blackboard_link):
 
         os.chdir('..')
 
-def get_all(url):
 
+def get_all(url):
     files = blackboard_loader.get_links(url)
     folders = blackboard_loader.get_folder_links(url, 'content')
 
     for i in folders:
-        print(i)
+        print(i.get_name())
 
     if folders:
         for folder in folders:
-            get_all(folder)
+            if not os.path.exists(folder.get_name()):
+                print('Making sub-folder for:'+folder.get_name())
+                os.makedirs(folder.get_name())
+            os.chdir(folder.get_name())
+            get_all(folder.get_url())
+            os.chdir('..')
 
     for item in files:
         print(item.get_url() + ' found at: ' + url )
@@ -81,16 +86,20 @@ def get_all(url):
         blackboard_loader.download_pdf(item)
 
 
+def explore_pages(pages):
+    for links in pages:
+        if not os.path.exists(links.get_name()):
+            print('Making directory for: ' + links.get_name())
+            os.makedirs(links.get_name())
+        os.chdir(links.get_name())
+        get_all(links.get_url())
+        os.chdir(home)
 
 
 #Call to login to blackboard
 blackboard_loader.login_bb(user, passwd)
 
-
 pages = []
-
-
-
 #For testing I will be searching this url and attempting to get all from it
 ai_content_page = blackboard_link()
 ai_content_page.set_name('AI')
@@ -120,13 +129,7 @@ pages.append(data_structures_content_page)
 pages.append(software_dev_page)
 pages.append(persis_data_content_page)
 
-for links in pages:
-    if not os.path.exists(links.get_name()):
-        print('Making directory for: ' + links.get_name())
-        os.makedirs(links.get_name())
-    os.chdir(links.get_name())
-    get_all(links.get_url())
-    os.chdir('..')
+explore_pages(pages)
 
 end_time = time.time()
 total_time = end_time - start_time

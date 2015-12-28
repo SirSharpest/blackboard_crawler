@@ -3,7 +3,8 @@ import urllib.request
 import urllib.parse
 import bs4
 from mimetypes import guess_extension
-from documents import pdfFile
+from documents import pdfFile, bbFolder
+import string
 
 ################################################
 # Functions
@@ -78,7 +79,7 @@ def get_recursive_links(url):
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    #ata = soup.find_all(id='content')
+    data = soup.find_all(id='content')
 
     #container for the docs
     documents = []
@@ -107,27 +108,23 @@ def get_folder_links(url, div):
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    #data = soup.find_all(id='content')
-    #data = soup.find_all(id='module:_371_1')
     data = soup.find_all(id=div)
 
-    #container for the docs
+    # container for the docs
     documents = []
 
     for div in data:
         links = div.find_all('a')
         for a in links:
-            documents.append('https://blackboard.aber.ac.uk' + a['href'])
+            if 'listContent' in a['href'] or 'execute' in a['href']:
+                folder = bbFolder()
+                folder.set_name(a.text)
+                if '/' in folder.get_name():
+                    folder.set_name(str(folder.get_name()).replace('/', '\\')) #fixes bug of making extra folder
+                folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+                documents.append(folder)
 
-
-  # At this point we have all links on a page
-
-    folders = []
-    for link in documents:
-        if 'listContent' in link or 'execute' in link: #if its a folder
-            folders.append(link)
-
-    return folders
+    return documents
 
 
 def find_content_link(url):
