@@ -63,7 +63,7 @@ def get_links(url):
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if'pdf' in a.text:
+            if'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower():
                 temp_doc = pdfFile()
                 temp_doc.set_name(a.text)
                 temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
@@ -137,13 +137,10 @@ def find_content_link(url):
        #data = soup.find_all(id='content')
     data = soup.find_all(id='menuWrap')
 
-    #container for the docs
-    documents = []
-
     for div in data:
         links = div.find_all('a')
         for a in links:
             if 'Content' in a.text or 'Course Documents' in a.text:
-             documents.append('https://blackboard.aber.ac.uk' + a['href'])
-             return documents
+             return ('https://blackboard.aber.ac.uk' + a['href'])
+
 

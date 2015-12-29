@@ -99,55 +99,16 @@ def explore_pages(pages):
 #Call to login to blackboard
 blackboard_loader.login_bb(user, passwd)
 
-pages = []
-#For testing I will be searching this url and attempting to get all from it
-ai_content_page = blackboard_link()
-ai_content_page.set_name('AI')
-ai_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12907_1&content_id=_665124_1')
 
-cunix_content_page = blackboard_link()
-cunix_content_page.set_name('C & Unix')
-cunix_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12900_1&content_id=_542745_1&mode=reset')
+compsci_2nd_year = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
+compsci_2nd_year_folders = blackboard_loader.get_folder_links(compsci_2nd_year, 'module:_371_1')
 
-data_structures_content_page = blackboard_link()
-data_structures_content_page.set_name('Data Structures')
-data_structures_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12896_1&content_id=_674066_1')
+for link in compsci_2nd_year_folders:
+    link.set_url(blackboard_loader.find_content_link(link.get_url()))
 
-software_dev_page = blackboard_link()
-software_dev_page.set_name('Software Development')
-software_dev_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12897_1&content_id=_668810_1')
-
-persis_data_content_page = blackboard_link()
-persis_data_content_page.set_name('Persistent Data')
-persis_data_content_page.set_url('https://blackboard.aber.ac.uk/webapps/blackboard/content/listContent.jsp?course_id=_12910_1&content_id=_559019_1&mode=reset')
-persis_data_content_page.set_recurse(True)
-
-# Add these pages to a list to iterate over
-pages.append(ai_content_page)
-pages.append(cunix_content_page)
-pages.append(data_structures_content_page)
-pages.append(software_dev_page)
-pages.append(persis_data_content_page)
-
-explore_pages(pages)
+explore_pages(compsci_2nd_year_folders)
 
 end_time = time.time()
 total_time = end_time - start_time
 print('Finished in: ' + str(total_time) + ' seconds')
 
-
-
-# compsci_2nd_year = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
-# compsci_2nd_year_folders = blackboard_loader.get_folder_links(compsci_2nd_year, 'module:_371_1')
-#
-#
-# compsci_2nd_year_folders_content = []
-#
-# for module in compsci_2nd_year_folders:
-#     compsci_2nd_year_folders_content.append(blackboard_loader.find_content_link(module))
-#
-# for content in compsci_2nd_year_folders_content:
-#     tmp = blackboard_link()
-#     tmp.set_name('test')
-#     tmp.set_url(content)
-#     get_all(tmp)
