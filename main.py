@@ -44,25 +44,6 @@ os.chdir(home)
 # Functions
 ###############################################
 
-#Grab and download one module's files
-def get_module(blackboard_link):
-        if not os.path.exists(blackboard_link.get_name()):
-            print('Making directory for: ' + blackboard_link.get_name())
-            os.makedirs(blackboard_link.get_name())
-
-        if blackboard_link.get_recurse() == True:
-            links = blackboard_loader.get_recursive_links(blackboard_link.get_url())
-        else:
-            links = blackboard_loader.get_links(blackboard_link.get_url())
-
-        os.chdir(blackboard_link.get_name())
-
-        for file in links:
-            # Call to download the file
-            blackboard_loader.download_pdf(file)
-
-        os.chdir('..')
-
 
 def get_all(url):
     files = blackboard_loader.get_links(url)
@@ -83,16 +64,21 @@ def get_all(url):
     for item in files:
         print(item.get_url() + ' found at: ' + url )
         print('Downloading now')
-        blackboard_loader.download_pdf(item)
+        blackboard_loader.download_file(item)
 
 
 def explore_pages(pages):
     for links in pages:
+        if not links.get_url(): #if the link hasn't been picked up then gloss over it (hopefully)
+            continue
         if not os.path.exists(links.get_name()):
             print('Making directory for: ' + links.get_name())
             os.makedirs(links.get_name())
         os.chdir(links.get_name())
         get_all(links.get_url())
+        if not os.listdir('../'+links.get_name()):
+            os.chdir('../')
+            os.rmdir(links.get_name())
         os.chdir(home)
 
 
@@ -100,13 +86,13 @@ def explore_pages(pages):
 blackboard_loader.login_bb(user, passwd)
 
 
-compsci_2nd_year = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
-compsci_2nd_year_folders = blackboard_loader.get_folder_links(compsci_2nd_year, 'module:_371_1')
+modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
+modules_folders = blackboard_loader.get_folder_links(modules_container, 'module:_371_1')
 
-for link in compsci_2nd_year_folders:
+for link in modules_folders:
     link.set_url(blackboard_loader.find_content_link(link.get_url()))
 
-explore_pages(compsci_2nd_year_folders)
+explore_pages(modules_folders)
 
 end_time = time.time()
 total_time = end_time - start_time

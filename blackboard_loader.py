@@ -4,7 +4,6 @@ import urllib.parse
 import bs4
 from mimetypes import guess_extension
 from documents import pdfFile, bbFolder
-import string
 
 ################################################
 # Functions
@@ -27,13 +26,13 @@ def login_bb(user_id, user_passwd):
     print('Connected!')
 
 
-def download_pdf(file_to_get):
+# Does just that, finds a file pdf,ppt or pptx and saves it
+def download_file(file_to_get):
 
     print('Accessing: ' + file_to_get.get_name())
     source = urllib.request.urlopen(file_to_get.get_url())
     extension = guess_extension(source.info()['Content-Type'])
-    app_name = "default.pdf"
-
+    app_name = "default"
 
     if extension:
         app_name = file_to_get.get_name()
@@ -45,10 +44,9 @@ def download_pdf(file_to_get):
         file.write(source.read())
         file.close()
     print('File saved: ' + file_to_get.get_name())
-    #print("I think it worked")
 
 
-#This will print the links which have "pdf" specified in the naming
+# This will print the links which have "pdf" specified in the naming
 def get_links(url):
     site = urllib.request.urlopen(url)
     html = site.read()
@@ -63,42 +61,17 @@ def get_links(url):
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower():
+            if'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
                 temp_doc = pdfFile()
                 temp_doc.set_name(a.text)
                 temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
+                if 'dcswww' in temp_doc.get_url(): # ignore if its on the aber server as cannot access
+                    continue
+                if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name(): # messy fix needs corrected soon
+                    continue
                 documents.append(temp_doc)
 
     return documents
-
-
-def get_recursive_links(url):
-    site = urllib.request.urlopen(url)
-    html = site.read()
-
-    # parse the html
-    soup = bs4.BeautifulSoup(html, 'html.parser')
-
-    data = soup.find_all(id='content')
-
-    #container for the docs
-    documents = []
-
-    for div in data:
-        links = div.find_all('a')
-        for a in links:
-            documents.append('https://blackboard.aber.ac.uk' + a['href'])
-
-    files_found = []
-
-    for link in documents:
-        for files in get_links(link):
-            files_found.append(files)
-
-    for link in get_links(url):
-        files_found.append(link)
-
-    return files_found
 
 
 def get_folder_links(url, div):
@@ -140,7 +113,7 @@ def find_content_link(url):
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if 'Content' in a.text or 'Course Documents' in a.text:
-             return ('https://blackboard.aber.ac.uk' + a['href'])
+            if 'Content' in a.text or 'Course Documents' in a.text or 'Statistics' in a.text or 'Research methods' in a.text:
+                return ('https://blackboard.aber.ac.uk' + a['href'])
 
 
