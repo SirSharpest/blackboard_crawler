@@ -23,7 +23,7 @@ user_passwd_box = 'password'
 
 user = input('Enter in Aber ID')
 passwd = input('Enter password')
-home = expanduser("~/Documents")
+home = os.getcwd()
 login_bttn = 'login'
 
 ################################################
