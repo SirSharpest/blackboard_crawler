@@ -14,6 +14,7 @@ import blackboard_loader
 from os.path import expanduser
 import time
 from blackboard_link import blackboard_link
+from threading import Thread
 
 ################################################
 # global vars (plz don't shout at me)
@@ -23,7 +24,7 @@ user_passwd_box = 'password'
 
 user = input('Enter in Aber ID')
 passwd = input('Enter password')
-home = os.getcwd()
+home = expanduser('~/Documents')
 login_bttn = 'login'
 
 ################################################
@@ -61,10 +62,21 @@ def get_all(url):
             get_all(folder.get_url())
             os.chdir('..')
 
+    Threads = []
     for item in files:
-        print(item.get_url() + ' found at: ' + url )
-        print('Downloading now')
-        blackboard_loader.download_file(item)
+
+        t = Thread(blackboard_loader.download_file(item))
+        Threads.append(t)
+
+        #print(item.get_url() + ' found at: ' + url )
+        #print('Downloading now')
+        #blackboard_loader.download_file(item)
+
+    for t in Threads:
+        t.start()
+
+    for t in Threads:
+        t.join()
 
 
 def explore_pages(pages):
@@ -82,7 +94,8 @@ def explore_pages(pages):
         os.chdir(home)
 
 
-#Call to login to blackboard
+
+# Call to login to blackboard
 blackboard_loader.login_bb(user, passwd)
 
 
@@ -93,6 +106,10 @@ for link in modules_folders:
     link.set_url(blackboard_loader.find_content_link(link.get_url()))
 
 explore_pages(modules_folders)
+
+
+
+
 
 end_time = time.time()
 total_time = end_time - start_time

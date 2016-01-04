@@ -1,9 +1,11 @@
-
 import urllib.request
 import urllib.parse
 import bs4
 from mimetypes import guess_extension
 from documents import pdfFile, bbFolder
+
+
+
 
 ################################################
 # Functions
@@ -28,14 +30,12 @@ def login_bb(user_id, user_passwd):
 
 # Does just that, finds a file pdf,ppt or pptx and saves it
 def download_file(file_to_get):
-
     print('Accessing: ' + file_to_get.get_name())
     source = urllib.request.urlopen(file_to_get.get_url())
     extension = guess_extension(source.info()['Content-Type'])
-    app_name = "default"
 
     if extension:
-        app_name = file_to_get.get_name()
+        app_name = file_to_get.get_name().encode('utf-8')
         file = open(app_name, 'wb')
         file.write(source.read())
         file.close()
@@ -55,19 +55,19 @@ def get_links(url):
 
     data = soup.find_all(id='content')
 
-    #container for the docs
+    # container for the docs
     documents = []
 
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
+            if 'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
                 temp_doc = pdfFile()
                 temp_doc.set_name(a.text)
                 temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
-                if 'dcswww' in temp_doc.get_url(): # ignore if its on the aber server as cannot access
+                if 'dcswww' in temp_doc.get_url():  # ignore if its on the aber server as cannot access
                     continue
-                if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name(): # messy fix needs corrected soon
+                if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name():  # messy fix needs corrected soon
                     continue
                 documents.append(temp_doc)
 
@@ -93,7 +93,8 @@ def get_folder_links(url, div):
                 folder = bbFolder()
                 folder.set_name(a.text)
                 if '/' in folder.get_name():
-                    folder.set_name(str(folder.get_name()).replace('/', '\\')) #fixes bug of making extra folder
+                    folder.set_name(folder.get_name().replace('/', ' '))
+                    #folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
                 folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
                 documents.append(folder)
 
@@ -107,13 +108,16 @@ def find_content_link(url):
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-       #data = soup.find_all(id='content')
+    # data = soup.find_all(id='content')
     data = soup.find_all(id='menuWrap')
 
     for div in data:
         links = div.find_all('a')
         for a in links:
+
+            #if its not a realitive link then I want to avoid it
+            if 'www.' in a['href']:
+                continue
+
             if 'Content' in a.text or 'Course Documents' in a.text or 'Statistics' in a.text or 'Research methods' in a.text:
                 return ('https://blackboard.aber.ac.uk' + a['href'])
-
-
