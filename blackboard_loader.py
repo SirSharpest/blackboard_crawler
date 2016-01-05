@@ -3,6 +3,7 @@ import urllib.parse
 import bs4
 from mimetypes import guess_extension
 from documents import pdfFile, bbFolder
+import re
 
 
 
@@ -86,6 +87,9 @@ def get_folder_links(url, div):
     # container for the docs
     documents = []
 
+    # messy temp variable to avoid confusion with for loop
+    temp = div
+
     for div in data:
         links = div.find_all('a')
         for a in links:
@@ -94,8 +98,17 @@ def get_folder_links(url, div):
                 folder.set_name(a.text)
                 if '/' in folder.get_name():
                     folder.set_name(folder.get_name().replace('/', ' '))
-                    #folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
+                    # folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
                 folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+
+                if temp == 'module:_371_1':
+                    module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
+                    if module_pattern.search(a.text) is not None:
+                        print('Found a module ' + a.text)
+                        documents.append(folder)
+                    continue
+
+
                 documents.append(folder)
 
     return documents

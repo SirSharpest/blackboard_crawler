@@ -13,7 +13,6 @@ import http.cookiejar
 import blackboard_loader
 from os.path import expanduser
 import time
-from blackboard_link import blackboard_link
 from threading import Thread
 import getpass
 
@@ -107,9 +106,6 @@ for link in modules_folders:
     link.set_url(blackboard_loader.find_content_link(link.get_url()))
 
 explore_pages(modules_folders)
-
-
-
 
 
 end_time = time.time()
