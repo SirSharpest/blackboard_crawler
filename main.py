@@ -15,6 +15,7 @@ from os.path import expanduser
 import time
 from blackboard_link import blackboard_link
 from threading import Thread
+import getpass
 
 ################################################
 # global vars (plz don't shout at me)
@@ -22,8 +23,8 @@ from threading import Thread
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = input('Enter in Aber ID')
-passwd = input('Enter password')
+user = input('Enter in Aber ID: ')
+passwd = getpass.getpass('Enter password: ')
 home = expanduser('~/Documents')
 login_bttn = 'login'
 
