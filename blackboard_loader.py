@@ -33,17 +33,11 @@ def login_bb(user_id, user_passwd):
 def download_file(file_to_get):
     print('Accessing: ' + file_to_get.get_name())
     source = urllib.request.urlopen(file_to_get.get_url())
-    extension = guess_extension(source.info()['Content-Type'])
+    app_name = file_to_get.get_name().encode('utf-8')
+    file = open(app_name, 'wb')
+    file.write(source.read())
+    file.close()
 
-    if extension:
-        app_name = file_to_get.get_name().encode('utf-8')
-        file = open(app_name, 'wb')
-        file.write(source.read())
-        file.close()
-    else:
-        file = open('test.pdf', 'wb')
-        file.write(source.read())
-        file.close()
     print('File saved: ' + file_to_get.get_name())
 
 
@@ -62,7 +56,8 @@ def get_links(url):
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if 'pdf' in a.text.lower() or 'ppt' in a.text.lower() or 'pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
+            if '.pdf' in a.text.lower() or '.ppt' in a.text.lower() or '.pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
+
                 temp_doc = pdfFile()
                 temp_doc.set_name(a.text)
                 temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
