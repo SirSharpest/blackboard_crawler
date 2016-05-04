@@ -96,7 +96,6 @@ def get_folder_links(url, divtag):
     # container for the docs
     documents = []
 
-
     for div in data:
         links = div.find_all('a')
         for a in links:
@@ -121,7 +120,6 @@ def get_folder_links(url, divtag):
     return documents
 
 
-#TODO REWRITE THIS TO SEARCH ALL FOLDERS
 #This function should get all of the links in the sidebar
 def find_content_link(url):
     site = urllib.request.urlopen(url)
@@ -144,12 +142,9 @@ def find_content_link(url):
                     in a.span.text.lower() or "aspire" in a.span.text.lower() or "tools" in a.span.text.lower():
                 continue
 
-
-           # print('https://blackboard.aber.ac.uk' + a['href'])
-
-            print(a.span.text)
-
             content.append('https://blackboard.aber.ac.uk' + a['href'])
+
+    return content
 
 
 
@@ -190,4 +185,7 @@ folders = [] # this will be a list of every folder found on blackboard
 # Search for all folders within each modules sidebar
 for folder in modules_folders:
     folders.append(find_content_link(folder.get_url()))
+
+for folder in folders:
+    get_folder_links(folder.get_url(), "content_listContainer")
 
