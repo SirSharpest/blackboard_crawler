@@ -84,20 +84,18 @@ def get_links(url):
     return documents
 
 
-def get_folder_links(url, div):
+def get_folder_links(url, divtag):
     site = urllib.request.urlopen(url)
     html = site.read()
 
     # parse the html
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    data = soup.find_all(id=div)
+    data = soup.find_all(id=divtag)
 
     # container for the docs
     documents = []
 
-    # messy temp variable to avoid confusion with for loop
-    temp = div
 
     for div in data:
         links = div.find_all('a')
@@ -110,7 +108,7 @@ def get_folder_links(url, div):
                     # folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
                 folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
 
-                if temp == 'module:_371_1':
+                if divtag == 'module:_371_1':
                     module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
                     if module_pattern.search(a.text) is not None:
                         print('Found a module ' + a.text)
@@ -133,17 +131,25 @@ def find_content_link(url):
     soup = bs4.BeautifulSoup(html, 'html.parser')
 
     # data = soup.find_all(id='content')
-    data = soup.find_all(id='menuWrap')
+    data = soup.find_all(id='courseMenuPalette_contents')
+
+    content = []
 
     for div in data:
         links = div.find_all('a')
         for a in links:
 
-            #if its not a realitive link then I want to avoid it
-            if 'www.' in a['href']:
+            #somethings we want to ignore
+            if "panopto" in a.span.text.lower() or "announcements" in a.span.text.lower() or "discussion" \
+                    in a.span.text.lower() or "aspire" in a.span.text.lower() or "tools" in a.span.text.lower():
                 continue
 
-            return ('https://blackboard.aber.ac.uk' + a['href'])
+
+           # print('https://blackboard.aber.ac.uk' + a['href'])
+
+            print(a.span.text)
+
+            content.append('https://blackboard.aber.ac.uk' + a['href'])
 
 
 
@@ -157,8 +163,8 @@ def find_content_link(url):
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = input('Enter in Aber ID: ')
-passwd = input('Enter password: ')
+user = "nah26" #input('Enter in Aber ID: ')
+passwd = "zxvf5821" #input('Enter password: ')
 home = expanduser('~/Documents')
 login_bttn = 'login'
 
@@ -177,4 +183,11 @@ login_bb(user, passwd)
 modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
 
 modules_folders = get_folder_links(modules_container, 'module:_371_1')
+
+files = [] # this will be a list of every file found on blackboard
+folders = [] # this will be a list of every folder found on blackboard
+
+# Search for all folders within each modules sidebar
+for folder in modules_folders:
+    folders.append(find_content_link(folder.get_url()))
 
