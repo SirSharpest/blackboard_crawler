@@ -56,7 +56,7 @@ def download_file(file_to_get):
 
 
 # This will print the links which have "pdf" specified in the naming
-def get_links(url):
+def get_links(url, folderName):
     site = urllib.request.urlopen(url)
     html = site.read()
     # parse the html
@@ -72,14 +72,21 @@ def get_links(url):
         for a in links:
             if '.pdf' in a.text.lower() or '.ppt' in a.text.lower() or '.pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
 
-                temp_doc = pdfFile()
-                temp_doc.set_name(a.text)
-                temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
-                if 'dcswww' in temp_doc.get_url():  # ignore if its on the aber server as cannot access
+                try:
+
+                    temp_doc = pdfFile()
+                    temp_doc.set_name(folderName + '/' + a.text)
+                    temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
+                    if 'dcswww' in temp_doc.get_url():  # ignore if its on the aber server as cannot access
+                        continue
+                    if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name():  # messy fix needs corrected soon
+                        continue
+                    documents.append(temp_doc)
+                    print(temp_doc.get_name())
+
+                except:
+                    print("brok")
                     continue
-                if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name():  # messy fix needs corrected soon
-                    continue
-                documents.append(temp_doc)
 
     return documents
 
@@ -133,16 +140,25 @@ def find_content_link(url):
 
     content = []
 
-    for div in data:
-        links = div.find_all('a')
-        for a in links:
 
-            #somethings we want to ignore
-            if "panopto" in a.span.text.lower() or "announcements" in a.span.text.lower() or "discussion" \
-                    in a.span.text.lower() or "aspire" in a.span.text.lower() or "tools" in a.span.text.lower():
-                continue
+    links = data[0].find_all('a')
 
-            content.append('https://blackboard.aber.ac.uk' + a['href'])
+    for l in links:
+        print(l)
+        print("\n")
+
+    for a in links:
+        #somethings we want to ignore
+        if "panopto" in a.span.text.lower() or "announcements" in a.span.text.lower() or "discussion" \
+                in a.span.text.lower() or "aspire" in a.span.text.lower() or "tools" in a.span.text.lower():
+             continue
+
+        folder = bbFolder()
+
+        print(a.span.text)
+        folder.set_name(a.span.text)
+        folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+        content.append(folder)
 
     return content
 
@@ -184,8 +200,23 @@ folders = [] # this will be a list of every folder found on blackboard
 
 # Search for all folders within each modules sidebar
 for folder in modules_folders:
+    #folders.append(find_content_link(folder.get_url()))
+    print(folder.get_name())
+
     folders.append(find_content_link(folder.get_url()))
 
-for folder in folders:
-    get_folder_links(folder.get_url(), "content_listContainer")
 
+
+
+
+# Now explore each folder and recurse it's subfolders to find all files
+for list in folders:
+    for folder in list:
+        try:
+            get_links(folder.get_url(), folder.get_name())
+        except:
+            print("SOMETHING BORK")
+        continue
+
+
+print("Not bork")
