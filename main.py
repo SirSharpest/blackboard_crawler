@@ -122,6 +122,8 @@ def get_folder_links(url, divtag):
                         documents.append(folder)
                     continue
 
+            if "launchLink" in a['href']:
+                continue
 
                 documents.append(folder)
 
@@ -151,11 +153,15 @@ def find_content_link(url):
                 or "http" in a.text.lower():
              continue
 
+        if "content"  in a.span.text.lower() or "slides" in a.span.text.lower() \
+            or "course" in a.span.text.lower() or "lecture" in a.span.text.lower():
 
-        folder = bbFolder()
-        folder.set_name(a.span.text)
-        folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+            folder = bbFolder()
+            folder.set_name(a.span.text)
+            folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
 
+        else:
+            continue
 
         content.append(folder)
 
@@ -164,14 +170,26 @@ def find_content_link(url):
 
 
 
-def get_all_folders(startURL):
-    print("test")
+def get_all_folders(startFolder):
+
+    print("looking at: " + startFolder.get_name() )
+
+    folders = get_folder_links(startFolder.get_url(), "content_listContainer")
+
+    files = get_links(startFolder.get_url(), startFolder.get_name())
+
+    if folders:
+        for folder in folders:
+            get_all_folders(folder)
+
+
 
 def download_module(moduleURL):
 
     links = find_content_link(moduleURL.get_url()) # this grabs all the links from the side bar for the module
 
-    get_all_folders(links.get_url())
+    for link in links:
+        get_all_folders(link)
 
 
 ################################################
