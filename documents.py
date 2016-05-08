@@ -20,7 +20,8 @@ class bbFolder:
     def __init__(self):
         self.name = None
         self.url = None
-        self.subfolders = []
+        self.subfolders = None
+        self.files = None
 
     def set_name(self, name):
         self.name = name
@@ -34,8 +35,11 @@ class bbFolder:
     def get_url(self):
         return self.url
 
-    def add_subfolder(self, bbFolder):
-        self.subfolders.append(bbFolder)
+    def add_subfolder(self, bbFolders):
+        self.subfolders = (bbFolders)
 
     def get_subfolders(self):
         return self.subfolders
+
+    def set_files(self, pdfFiles):
+        self.files = pdfFiles

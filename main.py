@@ -75,7 +75,7 @@ def get_links(url, folderName):
                 try:
 
                     temp_doc = pdfFile()
-                    temp_doc.set_name(folderName + '/' + a.text)
+                    temp_doc.set_name(a.text)
                     temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
                     if 'dcswww' in temp_doc.get_url():  # ignore if its on the aber server as cannot access
                         continue
@@ -105,8 +105,6 @@ def get_folder_links(url, divtag):
     for div in data:
         links = div.find_all('a')
         for a in links:
-
-
             if 'listContent' in a['href'] or 'execute' in a['href']:
                 folder = bbFolder()
                 folder.set_name(a.text)
@@ -115,6 +113,9 @@ def get_folder_links(url, divtag):
                     folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
                 folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
 
+                if  "listContentEditable" in a['href']:
+                    continue
+
                 if divtag == 'module:_371_1':
                     module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
                     if module_pattern.search(a.text) is not None:
@@ -122,10 +123,10 @@ def get_folder_links(url, divtag):
                         documents.append(folder)
                     continue
 
+                documents.append(folder)
+
             if "launchLink" in a['href']:
                 continue
-
-                documents.append(folder)
 
     return documents
 
@@ -150,7 +151,7 @@ def find_content_link(url):
         #somethings we want to ignore
         if "panopto" in a.span.text.lower() or "announcements" in a.span.text.lower() or "discussion" \
                 in a.span.text.lower() or "aspire" in a.span.text.lower() or "tools" in a.span.text.lower() \
-                or "http" in a.text.lower():
+                or "http" in a.text.lower() :
              continue
 
         if "content"  in a.span.text.lower() or "slides" in a.span.text.lower() \
@@ -174,13 +175,18 @@ def get_all_folders(startFolder):
 
     print("looking at: " + startFolder.get_name() )
 
-    folders = get_folder_links(startFolder.get_url(), "content_listContainer")
-
+    folders = get_folder_links(startFolder.get_url(), "containerdiv")
     files = get_links(startFolder.get_url(), startFolder.get_name())
+
+
+    startFolder.add_subfolder(folders)
+    startFolder.set_files(files)
+
+
 
     if folders:
         for folder in folders:
-            get_all_folders(folder)
+          get_all_folders(folder)
 
 
 
@@ -190,6 +196,8 @@ def download_module(moduleURL):
 
     for link in links:
         get_all_folders(link)
+
+    moduleURL.add_subfolder(links)
 
 
 ################################################
@@ -223,13 +231,11 @@ modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/t
 
 modules_folders = get_folder_links(modules_container, 'module:_371_1')
 
-files = [] # this will be a list of every file found on blackboard
-folders = [] # this will be a list of every folder found on blackboard
 
+for module in modules_folders:
+    download_module(module)
 
-download_module(modules_folders[0])
-
-
+print("All modules scanned!")
 
 # # Search for all folders within each modules sidebar
 # for folder in modules_folders:
