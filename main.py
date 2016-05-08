@@ -12,7 +12,6 @@ import urllib.request
 import http.cookiejar
 from os.path import expanduser
 import time
-from threading import Thread
 import getpass
 import urllib.request
 import urllib.parse
@@ -210,8 +209,8 @@ def download_module(moduleURL):
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = "nah26" #input('Enter in Aber ID: ')
-passwd = "zxvf5821" #input('Enter password: ')
+user = input('Enter in Aber ID: ')
+passwd = input('Enter password: ')
 home = expanduser('~/Documents')
 login_bttn = 'login'
 
@@ -233,6 +232,8 @@ modules_folders = get_folder_links(modules_container, 'module:_371_1')
 
 
 for module in modules_folders:
+    if( "vision" in module.get_name().lower() ):
+        continue
     download_module(module)
 
 print("All modules scanned!")
