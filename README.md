@@ -6,10 +6,15 @@ Also for ease of use it would be nice if a GUI was added, I'll try adn do this i
 
 ###Run instructions
 
-On linux:
+####On linux:
 
 1. Download the contents of dist
 2. In terminal locate the dist folder and cd into it
 3. Run "./main"
 4. Enter username and password
 
+####On other OS's
+
+1. From a command line / terminal  
+2. pip install bs4 
+3. python main.py
