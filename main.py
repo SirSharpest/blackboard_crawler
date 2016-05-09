@@ -50,7 +50,6 @@ def download_file(file_to_get):
     file = open(app_name, 'wb')
     file.write(source.read())
     file.close()
-
     print('File saved: ' + file_to_get.get_name())
 
 
@@ -72,7 +71,6 @@ def get_links(url, folderName):
             if '.pdf' in a.text.lower() or '.ppt' in a.text.lower() or '.pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
 
                 try:
-
                     temp_doc = pdfFile()
                     temp_doc.set_name(a.text)
                     temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
@@ -83,7 +81,7 @@ def get_links(url, folderName):
                     documents.append(temp_doc)
 
                 except:
-                    print("brok")
+                    print("bork trying to get the address of a file")
                     continue
 
     return documents
@@ -104,27 +102,31 @@ def get_folder_links(url, divtag):
     for div in data:
         links = div.find_all('a')
         for a in links:
-            if 'listContent' in a['href'] or 'execute' in a['href']:
-                folder = bbFolder()
-                folder.set_name(a.text)
-                if '/' in folder.get_name():
-                    folder.set_name(folder.get_name().replace('/', ' '))
-                    folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
-                folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+            try:
+                if 'listContent' in a['href'] or 'execute' in a['href']:
+                    folder = bbFolder()
+                    folder.set_name(a.text)
+                    if '/' in folder.get_name():
+                        folder.set_name(folder.get_name().replace('/', ' '))
+                        folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
+                    folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
 
-                if  "listContentEditable" in a['href']:
+                    if  "listContentEditable" in a['href']:
+                        continue
+
+                    if divtag == 'module:_371_1':
+                        module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
+                        if module_pattern.search(a.text) is not None:
+                            print('Found a module ' + a.text)
+                            documents.append(folder)
+                        continue
+
+                    documents.append(folder)
+
+                if "launchLink" in a['href']:
                     continue
-
-                if divtag == 'module:_371_1':
-                    module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
-                    if module_pattern.search(a.text) is not None:
-                        print('Found a module ' + a.text)
-                        documents.append(folder)
-                    continue
-
-                documents.append(folder)
-
-            if "launchLink" in a['href']:
+            except:
+                print("Oh deer, something broke whilst finding folder links")
                 continue
 
     return documents
@@ -144,8 +146,6 @@ def find_content_link(url):
     content = []
 
     links = data[0].find_all('a')
-
-
     for a in links:
         #somethings we want to ignore
         if "panopto" in a.span.text.lower() or "announcements" in a.span.text.lower() or "discussion" \
@@ -168,8 +168,6 @@ def find_content_link(url):
     return content
 
 
-
-
 def get_all_folders(startFolder):
 
     print("looking at: " + startFolder.get_name() )
@@ -189,14 +187,32 @@ def get_all_folders(startFolder):
 
 
 
-def download_module(moduleURL):
+def populate_modules(moduleURL):
 
-    links = find_content_link(moduleURL.get_url()) # this grabs all the links from the side bar for the module
+    links = find_content_link(moduleURL.get_url())  # this grabs all the links from the side bar for the module
 
     for link in links:
         get_all_folders(link)
 
     moduleURL.add_subfolder(links)
+
+
+def download_module(moduleURL):
+
+    if not os.path.exists(moduleURL.get_name()):
+        os.makedirs(moduleURL.get_name())
+
+    os.chdir(moduleURL.get_name())
+
+    if moduleURL.get_files():
+        for file in moduleURL.get_files():
+            download_file(file)
+
+    if moduleURL.get_subfolders():
+        for subfolder in moduleURL.get_subfolders():
+            download_module(subfolder)
+
+    os.chdir('..') # return up a directory
 
 
 ################################################
@@ -234,26 +250,18 @@ modules_folders = get_folder_links(modules_container, 'module:_371_1')
 for module in modules_folders:
     if( "vision" in module.get_name().lower() ):
         continue
-    download_module(module)
+    populate_modules(module)
 
 print("All modules scanned!")
 
-# # Search for all folders within each modules sidebar
-# for folder in modules_folders:
-#     folders.append(find_content_link(folder.get_url()))
-#
-#
-#
-#
-#
-# # Now explore each folder and recurse it's subfolders to find all files
-# for list in folders:
-#     for folder in list:
-#         try:
-#             get_links(folder.get_url(), folder.get_name())
-#          #   print(folder.get_name())
-#         except:
-#            # print("SOMETHING BORK")
-#             continue
-#
-#
+
+
+
+for module in modules_folders:
+    if module.get_subfolders():
+        download_module(module)  # important to remember that I am passing this as an object
+
+
+
+
+

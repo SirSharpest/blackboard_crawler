@@ -43,3 +43,6 @@ class bbFolder:
 
     def set_files(self, pdfFiles):
         self.files = pdfFiles
+
+    def get_files(self):
+        return self.files
