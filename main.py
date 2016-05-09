@@ -44,13 +44,18 @@ def login_bb(user_id, user_passwd):
 
 # Does just that, finds a file pdf,ppt or pptx and saves it
 def download_file(file_to_get):
-    print('Accessing: ' + file_to_get.get_name())
-    source = urllib.request.urlopen(file_to_get.get_url())
-    app_name = file_to_get.get_name().encode('utf-8')
-    file = open(app_name, 'wb')
-    file.write(source.read())
-    file.close()
-    print('File saved: ' + file_to_get.get_name())
+
+    if os.path.isfile(file_to_get.get_name()):
+        print(file_to_get.get_name() + " already exists in this directory... skipping it")
+        return
+    else:
+        print('Accessing: ' + file_to_get.get_name())
+        source = urllib.request.urlopen(file_to_get.get_url())
+        app_name = file_to_get.get_name().encode('utf-8')
+        file = open(app_name, 'wb')
+        file.write(source.read())
+        file.close()
+        print('File saved: ' + file_to_get.get_name())
 
 
 # This will print the links which have "pdf" specified in the naming
@@ -254,14 +259,16 @@ for module in modules_folders:
 
 print("All modules scanned!")
 
+print("Would you like to download all?")
 
+answer = input("Y/N")
 
+if("y" in answer.lower()):
+    for module in modules_folders:
+        if module.get_subfolders():
+            download_module(module)  # important to remember that I am passing this as an object
 
-for module in modules_folders:
-    if module.get_subfolders():
-        download_module(module)  # important to remember that I am passing this as an object
-
-
+print("Thanks for using the blackboard downloader!")
 
 
 
