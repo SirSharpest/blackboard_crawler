@@ -234,8 +234,8 @@ def download_module(moduleURL):
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = input('Enter in Aber ID: ')
-passwd = input('Enter password: ')
+user = input('Enter in Aber ID (e.g. "abc1"): ')
+passwd = getpass.getpass('Enter Password: ')
 home = expanduser('~/Documents')
 login_bttn = 'login'
 
