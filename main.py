@@ -122,7 +122,9 @@ def get_folder_links(url, divtag):
                         continue
 
                     if divtag == 'module:_371_1':
-                        module_pattern = re.compile('[a-zA-Z]{2}\d{5}')
+                        # CG - Updated REGEX to check for module code pattern EITHER as 'AB12345' or 'ABC1234' (case-insensitive).
+                        # CG - Some modules (e.g. Masters) use three letters and four numbers, rather than two letters and five numbers.
+                        module_pattern = re.compile('[a-zA-Z]{2}\d{5}|[a-zA-Z]{3}\d{4}')
                         if module_pattern.search(a.text) is not None:
                             print('Found a module ' + a.text)
                             documents.append(folder)
@@ -232,8 +234,8 @@ def download_module(moduleURL):
 user_id_box = 'user_id'
 user_passwd_box = 'password'
 
-user = input('Enter in Aber ID: ')
-passwd = input('Enter password: ')
+user = input('Enter in Aber ID (e.g. "abc1"): ')
+passwd = getpass.getpass('Enter Password: ')
 home = expanduser('~/Documents')
 login_bttn = 'login'
 
@@ -271,6 +273,3 @@ if("y" in answer.lower()):
             download_module(module)  # important to remember that I am passing this as an object
 
 print("Thanks for using the blackboard downloader!")
-
-
-
