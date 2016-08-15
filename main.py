@@ -26,6 +26,26 @@ import re
 # Functions
 ###############################################
 
+#  CG - Based on code from original source: https://filippo.io/send-a-head-request-in-python/
+class HEADRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """
+    Subclass the HTTPRedirectHandler to make it use our
+    HeadRequest also on the redirected URL
+    """
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if code in (301, 302, 303, 307):
+            newurl = newurl.replace(' ', '%20')
+            return HeadRequest(newurl,
+                               headers=req.headers,
+                               origin_req_host=req.origin_req_host,
+                               unverifiable=True)
+        else:
+            raise urllib.error.HTTPError(req.get_full_url(), code, msg, headers, fp)
+
+class HeadRequest(urllib.request.Request):
+    def get_method(self):
+        return "HEAD"
+
 def login_bb(user_id, user_passwd):
     authentication_url = 'https://blackboard.aber.ac.uk/webapps/login/'
     payload = {
@@ -60,38 +80,107 @@ def download_file(file_to_get):
         except:
             print("Couldn't get the file... possible 404 error")
 
+def convert_relative_to_absolute_url(url):
+
+    # CG - Returns the converted absolute BB url, or returns the original URL unmodified.
+    return re.sub(r'^(\/.*)$', r'https://blackboard.aber.ac.uk\1', url)
+
+def resolve_redirect_result_url(originalURL):
+
+    opener = urllib.request.OpenerDirector()
+
+    for handler in [urllib.request.HTTPHandler,
+                    urllib.request.HTTPDefaultErrorHandler,
+                    urllib.request.HTTPErrorProcessor,
+                    urllib.request.HTTPSHandler,
+                    HEADRedirectHandler]:
+
+        opener.add_handler(handler())
+
+    response = opener.open(HeadRequest(originalURL))
+
+    # CG - If we have a new URL from the response, return that, otherwise return the orignal URL.
+
+    try:
+        return response.geturl()
+    except AttributeError:
+        return originalURL
+
+
+
+def test_file_url_extension(fileURL):
+
+    file_url_match = re.search(r'^(https?\:\/\/blackboard.aber.ac.uk).*\.((?:doc|xls|ppt)x?|pdf|txt|class|zip)$', fileURL.lower())
+    # file_url_match = re.search(r'^^(?:https?:\/\/blackboard.aber.ac.uk).*\/(.*\.(?:(?:doc|xls|ppt)x?|pdf|txt|class|zip))$', fileURL.lower())
+
+    # if file_url_match:
+        # print(file_url_match.group(1))
+        # return file_url_match.group(1)
+
+    return file_url_match
+
+def extract_filename_from_url(fileURL):
+
+    url_parts = urllib.parse.urlparse(fileURL)
+    path_parts = url_parts[2].rpartition('/')
+    return path_parts[2]
+
 # This will print the links which have "pdf" specified in the naming
 def get_links(url, folderName):
-    site = urllib.request.urlopen(url)
-    html = site.read()
-    # parse the html
-    soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    data = soup.find_all(id='content_listContainer')
+    try:
 
-    # container for the docs
-    documents = []
+        site = urllib.request.urlopen(url)
+        html = site.read()
+        # parse the html
+        soup = bs4.BeautifulSoup(html, 'html.parser')
 
-    for div in data:
-        links = div.find_all('a')
-        for a in links:
-            if '.pdf' in a.text.lower() or '.ppt' in a.text.lower() or '.pptx' in a.text.lower() or '.zip' in a.text.lower() or '.class' in a.text.lower():
+        data = soup.find_all(id='content_listContainer')
 
-                try:
-                    temp_doc = pdfFile()
-                    temp_doc.set_name(a.text)
-                    temp_doc.set_url('https://blackboard.aber.ac.uk' + a['href'])
-                    if 'dcswww' in temp_doc.get_url():  # ignore if its on the aber server as cannot access
+        # container for the docs
+        documents = []
+
+        for div in data:
+
+            links = div.find_all('a')
+
+            for a in links:
+
+                absolute_href_url = convert_relative_to_absolute_url(a['href'])
+                redirect_url = resolve_redirect_result_url(absolute_href_url)
+
+                # new_url = re.sub(r'(?:https://blackboard\.aber\.ac\.uk)|^(\/.*)$', r'https://blackboard.aber.ac.uk\1', a['href'])
+
+                # CG - We can rely on the order of conditionals here for evaluation boolean operators in Python.
+                # See: https://docs.python.org/3/library/stdtypes.html#boolean-operations-and-or-not for more information.
+                # if test_file_name_extension(a.text) or test_file_url_extension(absolute_href_url):
+
+                if test_file_url_extension(redirect_url):
+
+                    try:
+
+                        temp_doc = pdfFile()
+
+                        file_name = extract_filename_from_url(redirect_url)
+
+                        print("  - File found: " + file_name)
+
+                        temp_doc.set_name(file_name)
+                        temp_doc.set_url(redirect_url)
+
+                        documents.append(temp_doc)
+
+                    except:
+                        print("Error whilst trying to get the address of a file")
                         continue
-                    if 'http://www.cokeandcode.com/main/tutorials/path-finding/' in temp_doc.get_name():  # messy fix needs corrected soon
-                        continue
-                    documents.append(temp_doc)
 
-                except:
-                    print("bork trying to get the address of a file")
-                    continue
+        return documents
 
-    return documents
+    except (urllib.error.HTTPError, urllib.error.URLError) as e:
+        # raise MyException("There was an error: %r" % e)
+        print("Likely timeout error. Continuing.")
+
+        return []
 
 
 def get_folder_links(url, divtag):
@@ -179,16 +268,13 @@ def find_content_link(url):
 
 def get_all_folders(startFolder):
 
-    print("looking at: " + startFolder.get_name() )
+    print("\nDirectory found: " + startFolder.get_name() + "\n")
 
     folders = get_folder_links(startFolder.get_url(), "containerdiv")
     files = get_links(startFolder.get_url(), startFolder.get_name())
 
-
     startFolder.add_subfolder(folders)
     startFolder.set_files(files)
-
-
 
     if folders:
         for folder in folders:
