@@ -18,33 +18,12 @@ import urllib.parse
 import bs4
 from mimetypes import guess_extension
 from documents import pdfFile, bbFolder
+from HeadHTTPRedirectHandler import HeadHTTPRedirectHandler, HeadRequest
 import re
-
-
 
 ################################################
 # Functions
 ###############################################
-
-#  CG - Based on code from original source: https://filippo.io/send-a-head-request-in-python/
-class HEADRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """
-    Subclass the HTTPRedirectHandler to make it use our
-    HeadRequest also on the redirected URL
-    """
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if code in (301, 302, 303, 307):
-            newurl = newurl.replace(' ', '%20')
-            return HeadRequest(newurl,
-                               headers=req.headers,
-                               origin_req_host=req.origin_req_host,
-                               unverifiable=True)
-        else:
-            raise urllib.error.HTTPError(req.get_full_url(), code, msg, headers, fp)
-
-class HeadRequest(urllib.request.Request):
-    def get_method(self):
-        return "HEAD"
 
 def login_bb(user_id, user_passwd):
     authentication_url = 'https://blackboard.aber.ac.uk/webapps/login/'
@@ -82,41 +61,36 @@ def download_file(file_to_get):
 
 def convert_relative_to_absolute_url(url):
 
-    # CG - Returns the converted absolute BB url, or returns the original URL unmodified.
+    # Returns the converted absolute BB url, or returns the original URL unmodified.
     return re.sub(r'^(\/.*)$', r'https://blackboard.aber.ac.uk\1', url)
 
-def resolve_redirect_result_url(originalURL):
+def resolve_redirected_url(originalURL):
 
-    opener = urllib.request.OpenerDirector()
-
-    for handler in [urllib.request.HTTPHandler,
-                    urllib.request.HTTPDefaultErrorHandler,
-                    urllib.request.HTTPErrorProcessor,
-                    urllib.request.HTTPSHandler,
-                    HEADRedirectHandler]:
-
-        opener.add_handler(handler())
-
-    response = opener.open(HeadRequest(originalURL))
-
-    # CG - If we have a new URL from the response, return that, otherwise return the orignal URL.
-
+    # If we have a new URL from the response, return that.
+    # Otherwise return the original URL.
     try:
+
+        opener = urllib.request.OpenerDirector()
+
+        for handler in [urllib.request.HTTPHandler,
+                        urllib.request.HTTPDefaultErrorHandler,
+                        urllib.request.HTTPErrorProcessor,
+                        urllib.request.HTTPSHandler,
+                        HeadHTTPRedirectHandler]:
+
+            opener.add_handler(handler())
+
+        response = opener.open(HeadRequest(originalURL))
+
         return response.geturl()
-    except AttributeError:
+
+    except:
         return originalURL
 
+def is_supported_file_url(fileURL):
 
-
-def test_file_url_extension(fileURL):
-
-    file_url_match = re.search(r'^(https?\:\/\/blackboard.aber.ac.uk).*\.((?:doc|xls|ppt)x?|pdf|txt|class|zip)$', fileURL.lower())
-    # file_url_match = re.search(r'^^(?:https?:\/\/blackboard.aber.ac.uk).*\/(.*\.(?:(?:doc|xls|ppt)x?|pdf|txt|class|zip))$', fileURL.lower())
-
-    # if file_url_match:
-        # print(file_url_match.group(1))
-        # return file_url_match.group(1)
-
+    file_url_match = re.search(r'^(https?\:\/\/blackboard.aber.ac.uk).*\.((?:doc|xls|ppt)x?|pdf|txt|class|zip)$',
+                               fileURL.lower())
     return file_url_match
 
 def extract_filename_from_url(fileURL):
@@ -146,21 +120,24 @@ def get_links(url, folderName):
 
             for a in links:
 
+                # We need to make sure all URLs that we wish to inspect are absolute in
+                # order to resolve any redirected URLs.
                 absolute_href_url = convert_relative_to_absolute_url(a['href'])
-                redirect_url = resolve_redirect_result_url(absolute_href_url)
 
-                # new_url = re.sub(r'(?:https://blackboard\.aber\.ac\.uk)|^(\/.*)$', r'https://blackboard.aber.ac.uk\1', a['href'])
+                # In order to check whether or not a BB file is accessible, we need
+                # to perform a HTTP HEAD request in order to resolve any redirects.
+                redirect_url = resolve_redirected_url(absolute_href_url)
 
-                # CG - We can rely on the order of conditionals here for evaluation boolean operators in Python.
-                # See: https://docs.python.org/3/library/stdtypes.html#boolean-operations-and-or-not for more information.
-                # if test_file_name_extension(a.text) or test_file_url_extension(absolute_href_url):
-
-                if test_file_url_extension(redirect_url):
+                # We currently support only a specific set of URL domains and file extensions.
+                if is_supported_file_url(redirect_url):
 
                     try:
 
                         temp_doc = pdfFile()
 
+                        # On some occasions weird filenames can appear if we just use the
+                        # title of the link from BB itself. Therefore we should instead use
+                        # the ACTUAL filename (inc. correct extension) directly from the file URL.
                         file_name = extract_filename_from_url(redirect_url)
 
                         print("  - File found: " + file_name)
@@ -200,19 +177,22 @@ def get_folder_links(url, divtag):
         for a in links:
             try:
                 if 'listContent' in a['href'] or 'execute' in a['href']:
+
                     folder = bbFolder()
                     folder.set_name(a.text)
+
                     if '/' in folder.get_name():
                         folder.set_name(folder.get_name().replace('/', ' '))
                         folder.set_name(str(folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
-                    folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+
+                    folder.set_url(convert_relative_to_absolute_url(a['href']))
 
                     if  "listContentEditable" in a['href']:
                         continue
 
                     if divtag == 'module:_371_1':
-                        # CG - Updated REGEX to check for module code pattern EITHER as 'AB12345' or 'ABC1234' (case-insensitive).
-                        # CG - Some modules (e.g. Masters) use three letters and four numbers, rather than two letters and five numbers.
+                        # REGEX checks for module code patterns matching EITHER 'AB12345' or 'ABC1234' (case-insensitive).
+                        # Some modules (e.g. Masters) use three letters and four numbers, rather than two letters and five numbers.
                         module_pattern = re.compile('[a-zA-Z]{2}\d{5}|[a-zA-Z]{3}\d{4}')
                         if module_pattern.search(a.text) is not None:
                             print('Found a module ' + a.text)
@@ -256,7 +236,8 @@ def find_content_link(url):
 
             folder = bbFolder()
             folder.set_name(a.span.text)
-            folder.set_url('https://blackboard.aber.ac.uk' + a['href'])
+
+            folder.set_url(convert_relative_to_absolute_url(a['href']))
 
         else:
             continue
@@ -333,14 +314,14 @@ urllib.request.install_opener(opener)
 start_time = time.time()
 os.chdir(home)
 
-
 # Call to login to blackboard
 login_bb(user, passwd)
 
-modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
+modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_45_1'
 
-modules_folders = get_folder_links(modules_container, 'module:_371_1')
-
+# 'module:_371_1' = 2015-16 content.
+# module:_357_1' = 2014-15 content.
+modules_folders = get_folder_links(modules_container, 'module:_357_1')
 
 for module in modules_folders:
     if( "vision" in module.get_name().lower() ):
