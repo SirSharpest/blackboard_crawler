@@ -20,25 +20,31 @@ from mimetypes import guess_extension
 from documents import pdfFile, bbFolder
 from HeadHTTPRedirectHandler import HeadHTTPRedirectHandler, HeadRequest
 import re
+import sys, getopt
 
 ################################################
 # Functions
 ###############################################
 
 def login_bb(user_id, user_passwd):
+
     authentication_url = 'https://blackboard.aber.ac.uk/webapps/login/'
+
     payload = {
         'op': 'login',
         'user_id': user_id,
         'password': user_passwd
     }
+
     print('Entering Blackboard...')
+
     data = urllib.parse.urlencode(payload)
     binary_data = data.encode('UTF-8')
     req = urllib.request.Request(authentication_url, binary_data)
     resp = urllib.request.urlopen(req)
     contents = resp.read()
-    print('Connected!')
+
+    print('Connected!\n')
 
 
 # Does just that, finds a file pdf,ppt or pptx and saves it
@@ -195,7 +201,7 @@ def get_folder_links(url, divtag):
                         # Some modules (e.g. Masters) use three letters and four numbers, rather than two letters and five numbers.
                         module_pattern = re.compile('[a-zA-Z]{2}\d{5}|[a-zA-Z]{3}\d{4}')
                         if module_pattern.search(a.text) is not None:
-                            print('Found a module ' + a.text)
+                            print('Found Module: ' + a.text)
                             documents.append(folder)
                         continue
 
@@ -290,53 +296,122 @@ def download_module(moduleURL):
 
     os.chdir('..') # return up a directory
 
+def single_module(inputURL):
 
-################################################
-# Main
-################################################
+    module = bbFolder()
 
+    site = urllib.request.urlopen(inputURL)
+    html = site.read()
 
-#Just doing some setup stuff
+    # CG - Grab the course name from the module menu title link.
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+    course_title = soup.find("a", {"id": "courseMenu_link"})
 
-user_id_box = 'user_id'
-user_passwd_box = 'password'
+    module.set_name(course_title.text)
 
-user = input('Enter in Aber ID (e.g. "abc1"): ')
-passwd = getpass.getpass('Enter Password: ')
-home = expanduser('~/Documents')
-login_bttn = 'login'
+    if '/' in module.get_name():
+        module.set_name(module_folder.get_name().replace('/', ' '))
+        module.set_name(str(module_folder.get_name()).replace('/', '\\'))  # fixes bug of its making extra folder
 
+    module.set_url(inputURL)
 
-cj = http.cookiejar.CookieJar()
-opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-urllib.request.install_opener(opener)
-start_time = time.time()
-os.chdir(home)
-
-# Call to login to blackboard
-login_bb(user, passwd)
-
-modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_45_1'
-
-# 'module:_371_1' = 2015-16 content.
-# module:_357_1' = 2014-15 content.
-modules_folders = get_folder_links(modules_container, 'module:_357_1')
-
-for module in modules_folders:
-    if( "vision" in module.get_name().lower() ):
-        continue
+    # CG - Parse the content folders for the individual module.
     populate_modules(module)
 
-print("All modules scanned!")
+    print("Module scanned successfully!\n")
+    print("Would you like to download all?")
 
-print("Would you like to download all?")
+    answer = input("Y/N")
 
-answer = input("Y/N")
-
-if("y" in answer.lower()):
-    for module in modules_folders:
+    if("y" in answer.lower()):
         if module.get_subfolders():
-            download_module(module)  # important to remember that I am passing this as an object
+            download_module(module)
 
-print("Thanks for using the blackboard downloader!")
+
+def scan_modules():
+
+    # modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_45_1'
+    #
+    # modules_folders = get_folder_links(modules_container, 'module:_357_1')
+
+    modules_container = 'https://blackboard.aber.ac.uk/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_55_1'
+
+    modules_folders = get_folder_links(modules_container, 'module:_371_1')
+
+    for module in modules_folders:
+        if( "vision" in module.get_name().lower() ):
+            continue
+        populate_modules(module)
+
+    print("All modules scanned!\n")
+
+    print("Would you like to download all?")
+
+    answer = input("Y/N")
+
+    if("y" in answer.lower()):
+        for module in modules_folders:
+            if module.get_subfolders():
+                download_module(module)  # important to remember that I am passing this as an object
+
+def process_input(argv):
+
+    if not argv:
+
+        login_bb_via_stdin()
+        scan_modules()
+
+    else:
+
+        try:
+
+            # 'u:' tells getopt that we expect a value for this flag.
+            opts, args = getopt.getopt(argv, "hu:", ["url="])
+
+        except getopt.GetoptError:
+
+            print('ERROR - Unexpected input.\nUSAGE: main.py -u <BB URL>')
+            sys.exit(2)
+
+        for opt, arg in opts:
+
+            if opt == '-h':
+                print('USAGE: main.py [-u|-url=] <BB Module URL>')
+                sys.exit()
+
+            else:
+
+                login_bb_via_stdin()
+
+                if opt in ("-u", "--url"):
+                    inputURL = arg
+                    single_module(inputURL)
+
+def login_bb_via_stdin():
+
+    user = input('Enter Aber ID (e.g. "abc1"): ')
+    passwd = getpass.getpass('Enter Password: ')
+
+    login_bb(user, passwd)
+
+def main():
+
+    user_id_box = 'user_id'
+    user_passwd_box = 'password'
+
+    home = expanduser('~/Documents')
+    login_bttn = 'login'
+
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    urllib.request.install_opener(opener)
+    start_time = time.time()
+    os.chdir(home)
+
+    process_input(sys.argv[1:])
+
+    print("\nThanks for using the AberLearn Blackboard downloader!")
+
+if __name__ == "__main__":
+    main()
