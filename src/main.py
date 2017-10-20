@@ -7,7 +7,8 @@
 ################################################
 # Imports
 ################################################
-from os.path import expanduser
+from os.path import expanduser, exists
+from os import chdir, makedirs
 from time import sleep
 import requests
 import getpass
@@ -16,8 +17,9 @@ from mimetypes import guess_extension
 from documents import BBModule, BBFile, BBFolder, get_file
 
 
-
 root = 'https://blackboard.aber.ac.uk'
+seen_links = []
+downloaded_files = []
 
 
 # TODO Refactor
@@ -26,20 +28,23 @@ def login_bb_via_stdin():
     passwd = getpass.getpass('Enter Password: ')
 
 
+
 """
 Used to recurse down folders
 """
 def explore_folder(url, name):
-    
+        
     # Change to this directory 
     # And create it 
     
+    if not exists(name):
+        makedirs(name)
+    chdir(name)
     
     folder = BBFolder(name, url)
     
     # sleep so as not to harass the site
     #sleep(1)    
-
     try:    
         # navigate to page
         r = s.get(url)
@@ -50,7 +55,6 @@ def explore_folder(url, name):
         print(url)
         print(name)
         print('****')
-        input('whats happening???')
         
     try:
         # search for folders
@@ -60,6 +64,11 @@ def explore_folder(url, name):
                 u = a['href']
                 if 'https' not in u:
                     u = '{0}{1}'.format(root, u)
+                    
+                if u in seen_links:
+                    continue
+                seen_links.append(u)
+
                 folder.add_subfolder(explore_folder(u, a.text))
     except:
         pass
@@ -73,10 +82,18 @@ def explore_folder(url, name):
                 u = a['href']
                 if 'https' not in u:
                     u = '{0}{1}'.format(root, u)
-                    folder.add_file(
-                            BBFile(a.text, u))
+                    
+                    bbf = BBFile(a.text, u)
+                    folder.add_file(bbf)
+
+                    if a.text not in downloaded_files:                    
+                        get_file(bbf, s)               
+                        downloaded_files.append(a.text)
+                    
     except:
         pass
+    
+    chdir('../')
     return folder
 
 
@@ -100,8 +117,8 @@ def is_folder(url):
 
 # login
 s = requests.Session()
-data = {'user_id': 'nah26',
-        'password': ''}
+data = {'user_id': 'userid',
+        'password': 'password'}
 s.post('https://blackboard.aber.ac.uk/webapps/login/', data)
 
 # grab module infor
@@ -121,7 +138,13 @@ for ul in soup.find_all('ul', class_='coursefakeclass'):
 # create tree structure
 
 for m in modules:
-
+    
+    chdir(expanduser('~/bb'))
+    
+    if not exists(m.get_name()):
+        makedirs(m.get_name())
+    chdir(m.get_name())
+    
     # create root folder
     root_folder = BBFolder('root', m.get_url())
     m.add_folder(root_folder)
@@ -146,19 +169,29 @@ for m in modules:
     # and go over recursively
 
     page_content = soup.find(id='content_listContainer')
-    for a in page_content.find_all('a'):
-        if is_folder(a['href']):
-            m.add_folder(explore_folder(
-                '{0}{1}'.format(root, a['href']), a.text))
-            
 
-    # Check for root files
-    for a in page_content.find_all('a'):
-        # if it's there then lets create a new file
-        if is_file(a.text):
-            root_folder.add_file(
-                BBFile(a.text, '{0}{1}'.format(root, a['href'])))
+    try:
+        for a in page_content.find_all('a'):
+            try:
+                if is_folder(a['href']):
+                    m.add_folder(explore_folder(
+                        '{0}{1}'.format(root, a['href']), a.text))
+            except:
+                print('*** Module Empty ****')
+                continue
+    except:
+        print('*** Module has no folders ***')
 
+
+    try:
+        # Check for root files
+        for a in page_content.find_all('a'):
+            # if it's there then lets create a new file
+            if is_file(a.text):
+                root_folder.add_file(
+                    BBFile(a.text, '{0}{1}'.format(root, a['href'])))
+    except:
+        print('*** No root files ***')
 
 
 # then download everything

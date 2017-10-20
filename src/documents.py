@@ -74,16 +74,18 @@ class BBFolder:
 def get_file(file_to_get, session):
 
     if os.path.isfile(file_to_get.get_name()):
-        print(file_to_get.get_name() + " already exists in this directory... skipping it")
+        print(file_to_get.get_name() + ' already exists in this directory... skipping it')
         return
     else:
         try:
             print('Accessing: ' + file_to_get.get_name())
             source = session.get(file_to_get.get_url())
             app_name = file_to_get.get_name().encode('utf-8')
-            file = open(app_name, 'wb')
-            file.write(source.read())
-            file.close()
+            
+            with open(app_name, 'wb') as handle:
+                for block in source.iter_content(1024):
+                    handle.write(block)
+            
             print('File saved: ' + file_to_get.get_name())
         except:
             print("Couldn't get the file... possible 404 error")
