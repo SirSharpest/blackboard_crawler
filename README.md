@@ -5,6 +5,12 @@ This should now work with most any course/degree scheme some slight changes woul
 
 Also for ease of use it would be nice if a GUI was added, I'll try and do this in the future after more features are added.
 
+
+### Install first
+```
+pip install bs4 requests
+```
+
 ### Usage
 
 ```
