@@ -7,14 +7,14 @@
 ################################################
 # Imports
 ################################################
-import os
 from os.path import expanduser
-import re
+from time import sleep
 import requests
 import getpass
 from bs4 import BeautifulSoup
 from mimetypes import guess_extension
 from documents import BBModule, BBFile, BBFolder, get_file
+
 
 
 root = 'https://blackboard.aber.ac.uk'
@@ -29,41 +29,69 @@ def login_bb_via_stdin():
 """
 Used to recurse down folders
 """
-
-
-def explore_folder(session, url, name):
-
+def explore_folder(url, name):
+    
+    # Change to this directory 
+    # And create it 
+    
+    
     folder = BBFolder(name, url)
+    
+    # sleep so as not to harass the site
+    #sleep(1)    
 
-    # navigate to page
-    r = session.get('{0}{1}'.format(root, url))
-    soup = BeautifulSoup(r.content, 'html.parser')
-    page_content = soup.find(id='content_listContainer')
-
-    # search for folders
-    # if we find a folder we search it
-
-    # then search for files
-    for ul in page_content.find_all(class_='attachments clearfix'):
+    try:    
+        # navigate to page
+        r = s.get(url)
+        soup = BeautifulSoup(r.content, 'html.parser')
+        page_content = soup.find(id='content_listContainer')
+    except: 
+        print('****')
+        print(url)
+        print(name)
+        print('****')
+        input('whats happening???')
+        
+    try:
+        # search for folders
+        # if we find a folder we search it
+        for a in page_content.find_all('a'):
+            if is_folder(a['href']):
+                u = a['href']
+                if 'https' not in u:
+                    u = '{0}{1}'.format(root, u)
+                folder.add_subfolder(explore_folder(u, a.text))
+    except:
         pass
-
+    
+    # then search for files
+    # and download them
+    try:
+        for a in page_content.find_all('a'):
+            # if it's there then lets create a new file
+            if is_file(a.text):
+                u = a['href']
+                if 'https' not in u:
+                    u = '{0}{1}'.format(root, u)
+                    folder.add_file(
+                            BBFile(a.text, u))
+    except:
+        pass
     return folder
 
 
 """
 Checks if url is a bb file
 """
-
-
-def is_file(url):
-    pass
+def is_file(text):
+    if 'pdf' in text or 'ppt' in text:
+        return True
+    return False
 
 
 """ 
 Checks if a url is a bb folder
 """
-
-
 def is_folder(url):
     if '/webapps/blackboard/content/listContent.jsp' in url:
         return True
@@ -73,7 +101,7 @@ def is_folder(url):
 # login
 s = requests.Session()
 data = {'user_id': 'nah26',
-        'password': 'password'}
+        'password': ''}
 s.post('https://blackboard.aber.ac.uk/webapps/login/', data)
 
 # grab module infor
@@ -90,7 +118,7 @@ for ul in soup.find_all('ul', class_='coursefakeclass'):
 
 
 # for each module
-        # create tree structure
+# create tree structure
 
 for m in modules:
 
@@ -121,17 +149,32 @@ for m in modules:
     for a in page_content.find_all('a'):
         if is_folder(a['href']):
             m.add_folder(explore_folder(
-                s, '{0}{1}'.format(root, a['href']), a.text))
-            pass
+                '{0}{1}'.format(root, a['href']), a.text))
+            
 
     # Check for root files
     for a in page_content.find_all('a'):
         # if it's there then lets create a new file
-        if 'pdf' in a.text or 'ppt' in a.text:
+        if is_file(a.text):
             root_folder.add_file(
                 BBFile(a.text, '{0}{1}'.format(root, a['href'])))
 
-    break
+
+
+# then download everything
+
+def searchFolder(folder):
+    for f in folder.get_subfolders():
+        searchFolder(f)
+        
+    for f in folder.get_files():
+        print(f)
+                    
+        
+for m in modules:
+    for f in m.get_folders():
+        searchFolder(f)
+
 
 
 # change directories

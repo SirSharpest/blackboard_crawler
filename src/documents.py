@@ -1,3 +1,5 @@
+import os
+
 class BBModule:
     def __init__(self, name, url):
         self.name = name
@@ -56,7 +58,7 @@ class BBFolder:
         return self.url
 
     def add_subfolder(self, BBFolder):
-        self.subfolder.append(BBFolder)
+        self.subfolders.append(BBFolder)
 
     def get_subfolders(self):
         return self.subfolders
@@ -69,7 +71,7 @@ class BBFolder:
     
     
 # Does just that, finds a file pdf,ppt or pptx and saves it
-def get_file(file_to_get):
+def get_file(file_to_get, session):
 
     if os.path.isfile(file_to_get.get_name()):
         print(file_to_get.get_name() + " already exists in this directory... skipping it")
@@ -77,7 +79,7 @@ def get_file(file_to_get):
     else:
         try:
             print('Accessing: ' + file_to_get.get_name())
-            source = urllib.request.urlopen(file_to_get.get_url())
+            source = session.get(file_to_get.get_url())
             app_name = file_to_get.get_name().encode('utf-8')
             file = open(app_name, 'wb')
             file.write(source.read())
